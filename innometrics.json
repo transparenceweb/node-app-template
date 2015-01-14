@@ -2,9 +2,9 @@
     "version_name": "node-getting-started",
     "version_description": "",
     "pages": [{
-        "name": "Setting App",
+        "name": "App Settings",
         "type": "internal",
-        "content": "frontend/settings.html"
+        "content": "frontend/page.html"
     }],
     "permissions": ["stream", "profile.update", "profile.read", "app.read.own"],
     "runtime": {

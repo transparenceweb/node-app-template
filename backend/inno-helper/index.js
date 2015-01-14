@@ -3,7 +3,7 @@ var util = require('util'),
 
 var vars = {},
     cache = {},
-    cachedTime = 300;
+    cachedTime = 10;
 
 var settingsAppUrl = function (obj) {
         return util.format(vars.apiUrl + '/companies/%s/buckets/%s/apps/%s/custom?app_key=%s', obj.groupId, obj.bucketName, obj.appName, obj.appKey);
@@ -12,15 +12,15 @@ var settingsAppUrl = function (obj) {
         return util.format(vars.apiUrl + '/companies/%s/buckets/%s/profiles/%s?app_key=%s', obj.groupId, obj.bucketName, obj.profileId, obj.appKey);
     };
 
-var getKeyForCache = function (name, params) {
-    return name + JSON.stringify(params);
+var getKeyForCache = function (name) {
+    return name;
 };
 
 var getCache = function (name, params) {
     if (!cachedTime || params.noCache) {
         return false;
     }
-    var key = getKeyForCache(name, params);
+    var key = getKeyForCache(name);
     if (cache.hasOwnProperty(key)) {
         if (cache[key].expired <= Date.now()) {
             delete cache[key];
@@ -36,11 +36,18 @@ var setCache = function (name, params, value) {
     if (!cachedTime || params.noCache) {
         return;
     }
-    var key = getKeyForCache(name, params);
+    var key = getKeyForCache(name);
     cache[key] = {
         expired: Date.now() + (cachedTime * 1000),
         value: value || true
     };
+};
+
+var expireCache = function (name) {
+    var key = getKeyForCache(name);
+    if (cache.hasOwnProperty(key)) {
+        cache[key].expired = 0;
+    }
 };
 
 exports = module.exports = {
@@ -101,7 +108,7 @@ exports = module.exports = {
      * @param  Function callback
      */
     getSettings: function (params, callback) {
-        var cachedValue = getCache('getSettings', params);
+        var cachedValue = getCache('settings' + params.vars.appName, params);
         if (cachedValue) {
             return callback(null, cachedValue);
         }
@@ -124,7 +131,7 @@ exports = module.exports = {
             if (!body.hasOwnProperty('custom')) {
                 return callback(new Error('Custom not found'));
             }
-            setCache('getSettings', params, body.custom);
+            setCache('settings' + params.vars.appName, params, body.custom);
             return callback(null, body.custom);
         });
     },
@@ -134,11 +141,7 @@ exports = module.exports = {
      * @param  Object   params   params have "vars" and "data"
      * @param  Function callback
      */
-    updateProfile: function (params, callback) {
-        var cachedValue = getCache('updateProfile', params);
-        if (cachedValue) {
-            return callback(null);
-        }
+    setAttributes: function (params, callback) {
         var url = profilesAppUrl({
             groupId: params.vars.groupId,
             bucketName: params.vars.bucketName,
@@ -160,7 +163,7 @@ exports = module.exports = {
             if (error) {
                 return callback(error);
             }
-            setCache('updateProfile', params);
+            expireCache('attributes' + params.vars.profileId);
             return callback(null);
         });
     },
@@ -170,8 +173,8 @@ exports = module.exports = {
      * @param  Object   params   params have "vars"
      * @param  Function callback
      */
-    getProfile: function (params, callback) {
-        var cachedValue = getCache('getProfile', params);
+    getAttributes: function (params, callback) {
+        var cachedValue = getCache('attributes' + params.vars.profileId, params);
         if (cachedValue) {
             return callback(null, cachedValue);
         }
@@ -200,7 +203,7 @@ exports = module.exports = {
                 profile.attributes.length) {
                 attributes = profile.attributes;
             }
-            setCache('getProfile', params, attributes);
+            setCache('attributes' + params.vars.profileId, params, attributes);
             return callback(null, attributes);
         });
 

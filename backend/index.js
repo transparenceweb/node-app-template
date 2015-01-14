@@ -50,7 +50,7 @@ app.get('/last-ten-urls', function (req, res) {
     }
     return res.json({
         error: null,
-        data: urls.reverse()
+        data: urls
     });
 });
 

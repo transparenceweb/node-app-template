@@ -9,7 +9,7 @@
                 url: url + 'last-ten-urls',
                 success: function (response) {
                     var urls = response.data;
-                    $('#stream').html(urls && urls.length ? urls.join('<br />') : 'List is empty');
+                    $('#stream').html(urls && urls.length ? urls.reverse().join('<br />') : 'List is empty');
                     if (timer) {
                         clearInterval(timer);
                     }

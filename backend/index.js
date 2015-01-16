@@ -26,6 +26,8 @@ inno.setVars({
     apiUrl: process.env.INNO_API_URL
 });
 
+inno.setVar('collectApp', process.env.INNO_APP_NAME);
+
 /**
  * Stream
  */
@@ -57,7 +59,6 @@ app.get('/last-ten-urls', function (req, res) {
 app.post('/set', function (req, res) {
     var params = req.body;
     inno.setVar('profileId', params.profileId);
-    inno.setVar('collectApp', process.env.INNO_APP_NAME);
     inno.setVar('section', params.section);
 
     inno.setAttributes({
@@ -66,8 +67,13 @@ app.post('/set', function (req, res) {
             'some-attribute': params.attribute
         }
     }, function (error) {
+        if (error) {
+            return res.json({
+                error: error.message
+            });
+        }
         return res.json({
-            error: error ? error.message : null,
+            error: null,
             data: {
                 'some-attribute': params.attribute
             }
@@ -83,17 +89,21 @@ app.get('/get', function (req, res) {
         });
     }
     inno.setVar('profileId', params.profileId);
-    inno.setVar('collectApp', process.env.INNO_APP_NAME);
     inno.setVar('section', params.section);
 
     inno.getAttributes({
         vars: inno.getVars()
     }, function (error, data) {
+        if (error) {
+            return res.json({
+                error: error.message
+            });
+        }
         data = data.filter(function (item) {
             return item.collectApp === process.env.INNO_APP_NAME && item.section === params.section;
         });
         return res.json({
-            error: error ? error.message : null,
+            error: null,
             data: data
         });
     });

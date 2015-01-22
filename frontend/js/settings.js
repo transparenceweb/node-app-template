@@ -10,13 +10,29 @@
         no_additional_properties: true,
         schema: {
             type: 'object',
-            title: 'App Settings',
+            title: 'App settings stored in Innometrics Cloud',
             properties: {
-                customSettingApp: {
-                    title: 'setting',
+                stringSetting: {
+                    title: 'String Example',
                     type: 'string',
                     minLength: 0,
                     maxLength: 40
+                },
+                numberSetting: {
+                    title: 'Number Example',
+                    type: 'number',
+                    minimum: 1,
+                    maximum: 20,
+                    multipleOf: 1
+                },
+                arraySetting: {
+                    title: 'Array Example',
+                    type: 'array',
+                    uniqueItems: true,
+                    items: {
+                        type: 'string',
+                        'enum': ['one', 'two', 'three']
+                    }
                 }
             }
         },
@@ -26,14 +42,18 @@
         theme: 'bootstrap3'
     });
 
+    var loader = new Loader();
+    loader.show();
+
     var inno = new IframeHelper();
     inno.onReady(function () {
         inno.getProperties(function (status, data) {
             if (status) {
                 editor.setValue(data);
             } else {
-                alert('Error');
+                alert('Error: unable to get Settings from Profile Cloud');
             }
+            loader.hide();
         });
     });
 

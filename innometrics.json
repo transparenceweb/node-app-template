@@ -3,11 +3,11 @@
     "version_description": "",
     "pages": [{
         "name": "App Settings",
-        "type": "frontend",
+        "type": "bundled",
         "content": "frontend/settings.html"
     }, {
         "name": "Profile Stream",
-        "type": "frontend",
+        "type": "bundled",
         "content": "frontend/stream.html"
     }],
     "permissions": ["stream", "profile.update", "profile.read", "app.read.own"],

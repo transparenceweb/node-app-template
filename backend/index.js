@@ -4,7 +4,7 @@ var express = require('express'),
 
 var app = express(),
     port = parseInt(process.env.PORT, 10),
-    urls = [];
+    cache = [];
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({
@@ -15,103 +15,79 @@ app.use(function (req, res, next) {
     next();
 });
 
-/**
- * Init vars
- */
-inno.setVars({
+var vars = {
     bucketName: process.env.INNO_BUCKET,
     appKey: process.env.INNO_APP_KEY,
     appName: process.env.INNO_APP_NAME,
     groupId: process.env.INNO_COMPANY_ID,
     apiUrl: process.env.INNO_API_URL
-});
-
+};
+inno.setVars(vars);
 inno.setVar('collectApp', process.env.INNO_APP_NAME);
 
-/**
- * Stream
- */
+app.get('/', function (req, res) {
+    return res.send('');
+});
+
 app.post('/', function (req, res) {
     inno.getDatas(req, function (error, data) {
-        if (data.hasOwnProperty('page-url')) {
-            urls.push(data['page-url']);
+        if (error) {
+            return res.json({
+                error: error
+            });
         }
-        res.json({
-            error: null
+        if (!(data.event && data.event.createdAt && data.event.definitionId && data.data && data.profile && data.profile.id)) {
+            return res.json({
+                error: 'Stream data is not correct'
+            });
+        }
+        cache.push({
+            data: JSON.stringify({
+                created_at: data.event.createdAt,
+                values: data.data,
+                event: data.event.definitionId,
+                profile: data.profile.id,
+                link: inno.webProfilesAppUrl(vars)
+            }),
+            created_at: Date.now()
+        });
+        return inno.getSettings({
+            vars: inno.getVars()
+        }, function (error, settings) {
+            if (error) {
+                return res.json({
+                    error: error
+                });
+            }
+            return inno.setAttributes({
+                vars: inno.getVars(),
+                data: settings
+            }, function (error) {
+                if (error) {
+                    return res.json({
+                        error: error
+                    });
+                }
+                return res.json({
+                    error: null,
+                    data: settings
+                });
+            });
+
         });
     });
 });
 
-/**
- * Routing
- */
-app.get('/last-ten-urls', function (req, res) {
-    if (urls.length > 10) {
-        var endIndex = urls.length - 1;
-        urls = urls.slice(endIndex - 10, endIndex);
+app.get('/last-ten-values', function (req, res) {
+    if (cache.length > 10) {
+        cache = cache.slice(-10);
     }
     return res.json({
         error: null,
-        data: urls
+        data: cache
     });
 });
 
-app.post('/set', function (req, res) {
-    var params = req.body;
-    inno.setVar('profileId', params.profileId);
-    inno.setVar('section', params.section);
-
-    inno.setAttributes({
-        vars: inno.getVars(),
-        data: {
-            'some-attribute': params.attribute
-        }
-    }, function (error) {
-        if (error) {
-            return res.json({
-                error: error.message
-            });
-        }
-        return res.json({
-            error: null,
-            data: {
-                'some-attribute': params.attribute
-            }
-        });
-    });
-});
-
-app.get('/get', function (req, res) {
-    var params = req.query;
-    if (!params.profileId || !params.section) {
-        return res.json({
-            error: 'No complete query parameter'
-        });
-    }
-    inno.setVar('profileId', params.profileId);
-    inno.setVar('section', params.section);
-
-    inno.getAttributes({
-        vars: inno.getVars()
-    }, function (error, data) {
-        if (error) {
-            return res.json({
-                error: error.message
-            });
-        }
-        data = data.filter(function (item) {
-            return item.collectApp === process.env.INNO_APP_NAME && item.section === params.section;
-        });
-        return res.json({
-            error: null,
-            data: data
-        });
-    });
-});
-
-/**
- * Server
- */
 var server = app.listen(port, function () {
     console.log('Listening on port %d', server.address().port);
 });

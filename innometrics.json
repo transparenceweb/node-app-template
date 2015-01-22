@@ -3,8 +3,12 @@
     "version_description": "",
     "pages": [{
         "name": "App Settings",
-        "type": "internal",
-        "content": "frontend/page.html"
+        "type": "frontend",
+        "content": "frontend/settings.html"
+    }, {
+        "name": "Profile Stream",
+        "type": "frontend",
+        "content": "frontend/stream.html"
     }],
     "permissions": ["stream", "profile.update", "profile.read", "app.read.own"],
     "runtime": {

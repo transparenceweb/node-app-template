@@ -2,7 +2,8 @@
     "globals": {
         "$": false,
         "JSONEditor": false,
-        "IframeHelper": false
+        "IframeHelper": false,
+        "Loader": false
     },
     "multistr": false,
     "maxerr": 50,

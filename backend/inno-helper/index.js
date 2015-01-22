@@ -5,52 +5,53 @@ var vars = {},
     cache = {},
     cachedTime = 10;
 
-var settingsAppUrl = function (obj) {
-        return util.format(vars.apiUrl + '/companies/%s/buckets/%s/apps/%s/custom?app_key=%s', obj.groupId, obj.bucketName, obj.appName, obj.appKey);
+var webProfilesAppUrl = function (obj) {
+        return util.format('%s/companies/%s/buckets/%s/profiles/%s', vars.apiUrl, obj.groupId, obj.bucketName, obj.profileId);
     },
     profilesAppUrl = function (obj) {
-        return util.format(vars.apiUrl + '/companies/%s/buckets/%s/profiles/%s?app_key=%s', obj.groupId, obj.bucketName, obj.profileId, obj.appKey);
+        return util.format('%s?app_key=%s', webProfilesAppUrl(obj), obj.appKey);
+    },
+    settingsAppUrl = function (obj) {
+        return util.format('%s/companies/%s/buckets/%s/apps/%s/custom?app_key=%s', vars.apiUrl, obj.groupId, obj.bucketName, obj.appName, obj.appKey);
     };
-
-var getKeyForCache = function (name) {
-    return name;
-};
 
 var getCache = function (name, params) {
     if (!cachedTime || params.noCache) {
-        return false;
+        return;
     }
-    var key = getKeyForCache(name);
-    if (cache.hasOwnProperty(key)) {
-        if (cache[key].expired <= Date.now()) {
-            delete cache[key];
-            return false;
+    if (cache.hasOwnProperty(name)) {
+        if (cache[name].expired <= Date.now()) {
+            delete cache[name];
+            return;
         } else {
-            return cache[key].value;
+            return cache[name].value;
         }
     }
-    return false;
+    return;
 };
 
 var setCache = function (name, params, value) {
     if (!cachedTime || params.noCache) {
         return;
     }
-    var key = getKeyForCache(name);
-    cache[key] = {
+    cache[name] = {
         expired: Date.now() + (cachedTime * 1000),
         value: value || true
     };
 };
 
 var expireCache = function (name) {
-    var key = getKeyForCache(name);
-    if (cache.hasOwnProperty(key)) {
-        cache[key].expired = 0;
+    if (cache.hasOwnProperty(name)) {
+        cache[name].expired = 0;
     }
 };
 
 exports = module.exports = {
+    /**
+     * Profile url
+     */
+    webProfilesAppUrl: webProfilesAppUrl,
+
     /**
      * Working with cache
      */
@@ -78,11 +79,18 @@ exports = module.exports = {
      * Parse start session data
      */
     getDatas: function (req, callback) {
-        var profile = req.body.profile,
-            session = profile.sessions[0];
+        if (!(req.body && req.body.profile)) {
+            return callback(new Error('Profile not found'));
+        }
+        var profile = req.body.profile;
+
+        if (!(profile.sessions && profile.sessions.length)) {
+            return callback(new Error('Session not found'));
+        }
+        var session = profile.sessions[0];
 
         if (!session.collectApp) {
-            return callback(new Error('Custom not found'));
+            return callback(new Error('CollectApp not found'));
         }
         exports.setVar('collectApp', session.collectApp);
 
@@ -91,21 +99,24 @@ exports = module.exports = {
         }
         exports.setVar('section', session.section);
 
-        if (!session.events[0].data) {
+        if (!(session.events && session.events.length && session.events[0].data)) {
             return callback(new Error('Data not set'));
         }
-
         if (!profile.id) {
             return callback(new Error('Profile id not found'));
         }
         exports.setVar('profileId', profile.id);
-        return callback(null, session.events[0].data);
+
+        return callback(null, {
+            profile: profile,
+            session: session,
+            event: session.events[0],
+            data: session.events[0].data
+        });
     },
 
     /**
      * Get settings application
-     * @param  Object   params   params have "vars"
-     * @param  Function callback
      */
     getSettings: function (params, callback) {
         var cachedValue = getCache('settings' + params.vars.appName, params);
@@ -138,8 +149,6 @@ exports = module.exports = {
 
     /**
      * Update data profile by id
-     * @param  Object   params   params have "vars" and "data"
-     * @param  Function callback
      */
     setAttributes: function (params, callback) {
         var url = profilesAppUrl({
@@ -170,8 +179,6 @@ exports = module.exports = {
 
     /**
      * Get data profile by id
-     * @param  Object   params   params have "vars"
-     * @param  Function callback
      */
     getAttributes: function (params, callback) {
         var cachedValue = getCache('attributes' + params.vars.profileId, params);

@@ -16,11 +16,11 @@ app.use(function (req, res, next) {
 });
 
 var vars = {
-    bucketName: process.env.INNO_BUCKET,
+    bucketName: process.env.INNO_BUCKET_ID,
     appKey: process.env.INNO_APP_KEY,
-    appName: process.env.INNO_APP_NAME,
+    appName: process.env.INNO_APP_ID,
     groupId: process.env.INNO_COMPANY_ID,
-    apiUrl: process.env.INNO_API_URL
+    apiUrl: process.env.INNO_API_HOST
 };
 inno.setVars(vars);
 inno.setVar('collectApp', process.env.INNO_APP_NAME);

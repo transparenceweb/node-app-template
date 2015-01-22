@@ -6,13 +6,13 @@ var vars = {},
     cachedTime = 10;
 
 var webProfilesAppUrl = function (obj) {
-        return util.format('%s/companies/%s/buckets/%s/profiles/%s', vars.apiUrl, obj.groupId, obj.bucketName, obj.profileId);
+        return util.format('%s/v1/companies/%s/buckets/%s/profiles/%s', vars.apiUrl, obj.groupId, obj.bucketName, obj.profileId);
     },
     profilesAppUrl = function (obj) {
         return util.format('%s?app_key=%s', webProfilesAppUrl(obj), obj.appKey);
     },
     settingsAppUrl = function (obj) {
-        return util.format('%s/companies/%s/buckets/%s/apps/%s/custom?app_key=%s', vars.apiUrl, obj.groupId, obj.bucketName, obj.appName, obj.appKey);
+        return util.format('%s/v1/companies/%s/buckets/%s/apps/%s/custom?app_key=%s', vars.apiUrl, obj.groupId, obj.bucketName, obj.appName, obj.appKey);
     };
 
 var getCache = function (name, params) {

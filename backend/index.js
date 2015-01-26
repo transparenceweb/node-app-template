@@ -23,40 +23,44 @@ var vars = {
     apiUrl: process.env.INNO_API_HOST
 };
 inno.setVars(vars);
-inno.setVar('collectApp', process.env.INNO_APP_NAME);
+inno.setVar('collectApp', process.env.INNO_APP_ID);
 
 app.get('/', function (req, res) {
     return res.send('');
 });
 
 app.post('/', function (req, res) {
+    
     inno.getDatas(req, function (error, data) {
         if (error) {
             return res.json({
-                error: error
+                error: error.message
             });
         }
+        
         if (!(data.event && data.event.createdAt && data.event.definitionId && data.data && data.profile && data.profile.id)) {
             return res.json({
                 error: 'Stream data is not correct'
             });
         }
+        
         cache.push({
             data: JSON.stringify({
                 created_at: data.event.createdAt,
                 values: data.data,
                 event: data.event.definitionId,
                 profile: data.profile.id,
-                link: inno.webProfilesAppUrl(vars)
+                link: inno.webProfileAppUrl(vars)
             }),
             created_at: Date.now()
         });
+        
         return inno.getSettings({
             vars: inno.getVars()
         }, function (error, settings) {
             if (error) {
                 return res.json({
-                    error: error
+                    error: error.message
                 });
             }
             return inno.setAttributes({
@@ -65,7 +69,7 @@ app.post('/', function (req, res) {
             }, function (error) {
                 if (error) {
                     return res.json({
-                        error: error
+                        error: error.message
                     });
                 }
                 return res.json({

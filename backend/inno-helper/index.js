@@ -112,9 +112,9 @@ var innoHelper = {
      * @param {Object} params
      * @returns {Mixed|undefined}
      */
-    getCache: function (name, params) {
+    getCache: function (name) {
         var value;
-        if (this.cachedTime && !params.noCache) {
+        if (this.cachedTime) {
             if (this.cache.hasOwnProperty(name)) {
                 if (this.cache[name].expired <= Date.now()) {
                     delete this.cache[name];
@@ -130,12 +130,11 @@ var innoHelper = {
      * Set data to cache
      * @private
      * @param {String} name
-     * @param {Object} params
      * @param {Mixed} value
      * @returns {undefined}
      */
-    setCache: function (name, params, value) {
-        if (this.cachedTime && !params.noCache) {
+    setCache: function (name, value) {
+        if (this.cachedTime) {
             this.cache[name] = {
                 expired: Date.now() + (this.cachedTime * 1000),
                 value: value || true
@@ -172,6 +171,24 @@ var innoHelper = {
      */
     setCachedTime: function (time) {
         this.cachedTime = time;
+    },
+
+    /**
+     * Merge objects
+     * @private
+     * @param {Object} main
+     * @param {Object} overrides
+     * @returns {Object}
+     */
+    mergeVars: function (main, overrides) {
+        var keys = [].concat(Object.keys(main), Object.keys(overrides)),
+            vars = {};
+
+        keys.forEach(function (key) {
+            vars[key] = overrides.hasOwnProperty(key) ? overrides[key] : main[key];
+        });
+
+        return vars;
     },
 
     /**
@@ -262,40 +279,53 @@ var innoHelper = {
      * @returns {Mixed}
      */
     getDatas: function (req, callback) {
-        if (!(req.body && req.body.profile)) {
-            return callback(new Error('Profile not found'));
-        }
-        var profile = req.body.profile;
+        var error,
+            datas,
+            profile, session;
 
-        if (!(profile.sessions && profile.sessions.length)) {
-            return callback(new Error('Session not found'));
-        }
-        var session = profile.sessions[0];
+        try {
+            if (!(req.body && req.body.profile)) {
+                throw new Error('Profile not found');
+            }
 
-        if (!session.collectApp) {
-            return callback(new Error('CollectApp not found'));
-        }
-        this.setVar('collectApp', session.collectApp);
+            profile = req.body.profile;
+            if (!profile.id) {
+                throw new Error('Profile id not found');
+            }
 
-        if (!session.section) {
-            return callback(new Error('Section not found'));
-        }
-        this.setVar('section', session.section);
+            if (!(profile.sessions && profile.sessions.length)) {
+                throw new Error('Session not found');
+            }
 
-        if (!(session.events && session.events.length && session.events[0].data)) {
-            return callback(new Error('Data not set'));
-        }
-        if (!profile.id) {
-            return callback(new Error('Profile id not found'));
-        }
-        this.setVar('profileId', profile.id);
+            session = profile.sessions[0];
 
-        return callback(null, {
-            profile: profile,
-            session: session,
-            event: session.events[0],
-            data: session.events[0].data
-        });
+            if (!session.collectApp) {
+                throw new Error('CollectApp not found');
+            }
+
+            if (!session.section) {
+                throw new Error('Section not found');
+            }
+
+            if (!(session.events && session.events.length && session.events[0].data)) {
+                throw new Error('Data not set');
+            }
+
+            this.setVar('profileId', profile.id);
+            this.setVar('collectApp', session.collectApp);
+            this.setVar('section', session.section);
+
+            datas = {
+                profile: profile,
+                session: session,
+                event: session.events[0],
+                data: session.events[0].data
+            };
+        } catch (e) {
+            error = e;
+        }
+
+        return callback(error, datas);
     },
 
     /**
@@ -310,71 +340,107 @@ var innoHelper = {
      *          option3: ['abc', 123]
      *     }
      * 
-     * @param {Object} params
+     * @param {Object} [params]
      * @param {Function} callback
      * @returns {Mixed}
      */
     getSettings: function (params, callback) {
-        var self = this;
-        var cachedValue = this.getCache('settings' + params.vars.appName, params);
-        if (cachedValue) {
-            return callback(null, cachedValue);
+        var self = this,
+            allowCache,
+            cachedValue,
+            url,
+            vars;
+
+        if (arguments.length < 2) {
+            callback = params;
+            params = {};
         }
-        var url = this.settingsAppUrl({
-            groupId: params.vars.groupId,
-            bucketName: params.vars.bucketName,
-            appName: params.vars.appName,
-            appKey: params.vars.appKey
+        vars = this.mergeVars(this.getVars(), params.vars || {});
+        allowCache = !params.noCache;
+
+        if (allowCache) {
+            cachedValue = this.getCache('settings' + vars.appName);
+            if (typeof cachedValue !== 'undefined') {
+                return callback(null, cachedValue);
+            }
+        }
+
+        url = this.settingsAppUrl({
+            groupId:    vars.groupId,
+            bucketName: vars.bucketName,
+            appName:    vars.appName,
+            appKey:     vars.appKey
         });
+
         request.get(url, function (error, response) {
-            if (error) {
-                return callback(error);
+            var body,
+                settings;
+
+            if (!error) {
+                try {
+                    body = JSON.parse(response.body);
+                } catch (e) {
+                    throw new Error('Parse JSON settings (' + url + ')');
+                }
             }
-            var body;
-            try {
-                body = JSON.parse(response.body);
-            } catch (e) {
-                return callback(new Error('Parse JSON settings (' + url + ')'));
+
+            if (!error && !body.hasOwnProperty('custom')) {
+                error = new Error('Custom not found');
             }
-            if (!body.hasOwnProperty('custom')) {
-                return callback(new Error('Custom not found'));
+
+            if (!error) {
+                settings = body.custom;
+                if (allowCache) {
+                    self.setCache('settings' + vars.appName, settings);
+                }
             }
-            self.setCache('settings' + params.vars.appName, params, body.custom);
-            return callback(null, body.custom);
+
+            return callback(error, settings);
         });
     },
 
     /**
      * Update attributes of the profile
-     * @param {Object} params
+     * @param {Object} attributes
+     * @param {Object} [params]
      * @param {Function} callback
      * @returns {undefined}
      */
-    setAttributes: function (params, callback) {
-        var self = this;
-        var url = this.profileAppUrl({
-            groupId: params.vars.groupId,
-            bucketName: params.vars.bucketName,
-            profileId: params.vars.profileId,
-            appKey: params.vars.appKey
+    setAttributes: function (attributes, params, callback) {
+        var self = this,
+            url,
+            vars;
+
+        if (arguments.length < 3) {
+            callback = params;
+            params = {};
+        }
+
+        vars = this.mergeVars(this.getVars(), params.vars || {});
+
+        url = this.profileAppUrl({
+            groupId:    vars.groupId,
+            bucketName: vars.bucketName,
+            profileId:  vars.profileId,
+            appKey:     vars.appKey
         });
+
         request.post({
             url: url,
             body: {
-                id: params.vars.profileId,
+                id: vars.profileId,
                 attributes: [{
-                    collectApp: params.vars.collectApp,
-                    section: params.vars.section,
-                    data: params.data
+                    collectApp: vars.collectApp,
+                    section:    vars.section,
+                    data:       attributes
                 }]
             },
             json: true
         }, function (error) {
-            if (error) {
-                return callback(error);
+            if (!error) {
+                self.expireCache('attributes' + vars.profileId);
             }
-            self.expireCache('attributes' + params.vars.profileId);
-            return callback(null);
+            return callback(error);
         });
     },
 
@@ -395,45 +461,73 @@ var innoHelper = {
      *          modifiedAt: 1422271791719
      *     }
      * 
-     * @param {Object} params
+     * @param {Object} [params]
      * @param {Function} callback
      * @returns {undefined}
      */
     getAttributes: function (params, callback) {
-        var self = this;
-        var cachedValue = this.getCache('attributes' + params.vars.profileId, params);
-        if (cachedValue) {
-            return callback(null, cachedValue);
+        var self = this,
+            allowCache,
+            cachedValue,
+            url,
+            vars;
+
+        if (arguments.length < 2) {
+            callback = params;
+            params = {};
         }
-        var url = this.profileAppUrl({
-            groupId: params.vars.groupId,
-            bucketName: params.vars.bucketName,
-            profileId: params.vars.profileId,
-            appKey: params.vars.appKey
+        vars = this.mergeVars(this.getVars(), params.vars || {});
+        allowCache = !params.noCache;
+
+        if (allowCache) {
+            cachedValue = this.getCache('attributes' + vars.profileId);
+            if (typeof cachedValue !== 'undefined') {
+                return callback(null, cachedValue);
+            }
+        }
+
+        url = this.profileAppUrl({
+            groupId:    vars.groupId,
+            bucketName: vars.bucketName,
+            profileId:  vars.profileId,
+            appKey:     vars.appKey
         });
+
         request.get(url, function (error, response) {
-            if (error) {
-                return callback(error);
+            var body,
+                profile,
+                attributes;
+
+            if (!error) {
+                try {
+                    body = JSON.parse(response.body);
+                } catch (e) {
+                    error = new Error('Parse JSON profile (' + url + ')');
+                }
             }
-            var body;
-            try {
-                body = JSON.parse(response.body);
-            } catch (e) {
-                return callback(new Error('Parse JSON profile (' + url + ')'));
+
+            if (!error) {
+                profile = body.profile;
+                if (!profile) {
+                    error = new Error('Profile not found');
+                }
             }
-            var profile = body.profile;
-            if (!profile) {
-                return callback(new Error('Profile not found'));
+
+            if (!error) {
+                attributes = [];
+                if (profile.attributes &&
+                    profile.attributes.length) {
+                    attributes = profile.attributes;
+                }
+                if (allowCache) {
+                    self.setCache('attributes' + vars.profileId, attributes);
+                }
             }
-            var attributes = [];
-            if (profile.attributes &&
-                profile.attributes.length) {
-                attributes = profile.attributes;
-            }
-            self.setCache('attributes' + params.vars.profileId, params, attributes);
-            return callback(null, attributes);
+
+            return callback(error, attributes);
         });
     }
+
 };
 
 exports = module.exports = innoHelper;

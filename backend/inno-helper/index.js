@@ -10,39 +10,41 @@
  *         var1: 'value1',
  *         var2: 'value2'
  *     });
- *     
+ *
  *     inno.setVar('varName', process.env.VAR_NAME);
- *     
+ *
  *     app.post('/', function (req, res) {
  *          inno.getDatas(req, function (error, data) {
  *              // do something
  *          });
  *     });
- *     
+ *
  *     inno.getSettings({
  *          vars: inno.getVars()
  *     }, function (error, settings) {
  *          // do something
  *     });
- *     
+ *
  *     inno.setAttributes({
  *          vars: inno.getVars(),
  *          data: settings
  *     }, function (error) {
  *          // do something
  *     });
- *     
+ *
  *     inno.getAttributes({
  *          vars: inno.getVars(),
  *     }, function (error, settings) {
  *          // do something
  *     });
- *     
+ *
  */
+
+'use strict';
 
 var util = require('util'),
     request = require('request');
-    
+
 var innoHelper = {
     /**
      * Object with environment vars
@@ -50,41 +52,41 @@ var innoHelper = {
      * @type Object
      */
     vars: {},
-    
+
     /**
      * Cache storage
      * @private
      * @type Object
      */
     cache: {},
-    
+
     /**
      * Cache TTL
      * @private
      * @type Number
      */
     cachedTime: 10,
-    
+
     /**
      * Form URL to web profile
      *
      *     @example
      *     http://api.innomdc.com/v1/companies/4/buckets/testbucket/profiles/vze0bxh4qpso67t2dxfc7u81a5nxvefc
-     * 
+     *
      * @param {Object} obj
      * @returns {String}
-     * 
+     *
      */
     webProfileAppUrl: function (obj) {
         return util.format('%s/v1/companies/%s/buckets/%s/profiles/%s', this.vars.apiUrl, obj.groupId, obj.bucketName, obj.profileId);
     },
-    
+
     /**
      * Form URL to web profiles using App key
-     * 
+     *
      *     @example
      *     http://api.innomdc.com/v1/companies/4/buckets/testbucket/profiles/vze0bxh4qpso67t2dxfc7u81a5nxvefc?app_key=8HJ3hnaxErdJJ62H
-     * 
+     *
      * @param {Object} obj
      * @returns {String}
      */
@@ -94,10 +96,10 @@ var innoHelper = {
 
     /**
      * Form URL to app settings
-     * 
+     *
      *     @example
      *     http://api.innomdc.com/v1/companies/4/buckets/testbucket/apps/testapp/custom?app_key=8HJ3hnaxErdJJ62H
-     * 
+     *
      * @param {Object} obj
      * @returns {String}
      */
@@ -152,7 +154,7 @@ var innoHelper = {
             this.cache[name].expired = 0;
         }
     },
-    
+
     /**
      * Clear all cache records
      * @private
@@ -161,7 +163,7 @@ var innoHelper = {
     clearCache: function () {
         this.cache = {};
     },
-    
+
     /**
      * Change cache TTL
      * @private
@@ -192,7 +194,7 @@ var innoHelper = {
 
     /**
      * Get environment vars
-     * 
+     *
      *     @example
      *     {
      *          bucketName: 'testbucket',
@@ -204,13 +206,13 @@ var innoHelper = {
      *          section: 'testsection',
      *          profileId: 'omrd9lsa70bqukicsctlcvcu97xwehgm'
      *      }
-     * 
+     *
      * @returns {Object}
      */
     getVars: function () {
         return this.vars;
     },
-    
+
     /**
      * Set environment vars
      * @param {Object} obj
@@ -219,7 +221,7 @@ var innoHelper = {
     setVars: function (obj) {
         this.vars = obj;
     },
-    
+
     /**
      * Set environment var by name
      * @param {String} name
@@ -232,7 +234,7 @@ var innoHelper = {
 
     /**
      * Parse start session data
-     * 
+     *
      *     @example
      *     {
      *          profile: { 
@@ -272,54 +274,20 @@ var innoHelper = {
      *              'page-url': 'http://thejackalofjavascript.com/getting-started-with-node-webkit-apps/'
      *          }
      *      }
-     * 
+     *
      * @param {Object} req
      * @param {Function} callback
      * @returns {Mixed}
      */
     getDatas: function (req, callback) {
         var error,
-            datas,
-            profile, session;
+            datas;
 
         try {
-            if (!(req.body && req.body.profile)) {
-                throw new Error('Profile not found');
-            }
-
-            profile = req.body.profile;
-            if (!profile.id) {
-                throw new Error('Profile id not found');
-            }
-
-            if (!(profile.sessions && profile.sessions.length)) {
-                throw new Error('Session not found');
-            }
-
-            session = profile.sessions[0];
-
-            if (!session.collectApp) {
-                throw new Error('CollectApp not found');
-            }
-
-            if (!session.section) {
-                throw new Error('Section not found');
-            }
-
-            if (!(session.events && session.events.length && session.events[0].data)) {
-                throw new Error('Data not set');
-            }
-
-            this.setVar('profileId', profile.id);
-            this.setVar('collectApp', session.collectApp);
-            this.setVar('section', session.section);
-
-            datas = {
-                profile: profile,
-                session: session,
-                event: session.events[0],
-                data: session.events[0].data
-            };
+            datas = this.parseStreamData(req.body);
+            this.setVar('profileId', datas.profile.id);
+            this.setVar('collectApp', datas.session.collectApp);
+            this.setVar('section', datas.session.section);
         } catch (e) {
             error = e;
         }
@@ -328,17 +296,73 @@ var innoHelper = {
     },
 
     /**
+     *
+     * @param rawData
+     * @return {Object}
+     */
+    parseStreamData: function (rawData) {
+        var data = rawData,
+            profile,
+            session;
+
+        try {
+            if (typeof data !== 'object') {
+                data = JSON.parse(data);
+            }
+        } catch (e) {
+            throw new Error('Wrong stream data');
+        }
+
+        profile = data.profile;
+
+        if (!profile) {
+            throw new Error('Profile not found');
+        }
+
+        if (!profile.id) {
+            throw new Error('Profile id not found');
+        }
+
+        if (!(profile.sessions && profile.sessions.length)) {
+            throw new Error('Session not found');
+        }
+
+        session = profile.sessions[0];
+
+        if (!session.collectApp) {
+            throw new Error('CollectApp not found');
+        }
+
+        if (!session.section) {
+            throw new Error('Section not found');
+        }
+
+        if (!(session.events && session.events.length && session.events[0].data)) {
+            throw new Error('Data not set');
+        }
+
+        data = {
+            profile:    profile,
+            session:    session,
+            event:      session.events[0],
+            data:       session.events[0].data
+        };
+
+        return data
+    },
+
+    /**
      * Get settings application
-     * 
+     *
      *     Example of returning **app settings** object:
-     *     
+     *
      *     @example
      *     {
      *          option1: 'abc',
      *          option2: 123
      *          option3: ['abc', 123]
      *     }
-     * 
+     *
      * @param {Object} [params]
      * @param {Function} callback
      * @returns {Mixed}
@@ -445,9 +469,9 @@ var innoHelper = {
 
     /**
      * Get attributes of the profile
-     * 
+     *
      *     Example of returning **attributes** object:
-     * 
+     *
      *     @example
      *     {
      *          collectApp: 'aaa',
@@ -459,7 +483,7 @@ var innoHelper = {
      *          },
      *          modifiedAt: 1422271791719
      *     }
-     * 
+     *
      * @param {Object} [params]
      * @param {Function} callback
      * @returns {undefined}

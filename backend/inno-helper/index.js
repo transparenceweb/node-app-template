@@ -186,7 +186,9 @@ var innoHelper = {
             vars = {};
 
         keys.forEach(function (key) {
-            vars[key] = overrides.hasOwnProperty(key) ? overrides[key] : main[key];
+            if (!vars.hasOwnProperty(key)) {
+                vars[key] = overrides.hasOwnProperty(key) ? overrides[key] : main[key];
+            }
         });
 
         return vars;
@@ -378,8 +380,8 @@ var innoHelper = {
             callback = params;
             params = {};
         }
-        vars = this.mergeVars(this.getVars(), params.vars || {});
-        allowCache = !params.noCache;
+        vars = this.mergeVars(this.getVars(), params || {});
+        allowCache = !vars.noCache;
 
         if (allowCache) {
             cachedValue = this.getCache('settings' + vars.appName);
@@ -439,7 +441,7 @@ var innoHelper = {
             params = {};
         }
 
-        vars = this.mergeVars(this.getVars(), params.vars || {});
+        vars = this.mergeVars(this.getVars(), params || {});
 
         url = this.profileAppUrl({
             groupId:    vars.groupId,
@@ -499,8 +501,8 @@ var innoHelper = {
             callback = params;
             params = {};
         }
-        vars = this.mergeVars(this.getVars(), params.vars || {});
-        allowCache = !params.noCache;
+        vars = this.mergeVars(this.getVars(), params || {});
+        allowCache = !vars.noCache;
 
         if (allowCache) {
             cachedValue = this.getCache('attributes' + vars.profileId);

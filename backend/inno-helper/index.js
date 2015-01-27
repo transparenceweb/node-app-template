@@ -109,7 +109,6 @@ var innoHelper = {
      * Get data from cache by name if it's not expired
      * @private
      * @param {String} name
-     * @param {Object} params
      * @returns {Mixed|undefined}
      */
     getCache: function (name) {

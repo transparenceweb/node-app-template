@@ -67,7 +67,7 @@ var innoHelper = {
     
     /**
      * Form URL to web profile
-     * 
+     *
      *     @example
      *     http://api.innomdc.com/v1/companies/4/buckets/testbucket/profiles/vze0bxh4qpso67t2dxfc7u81a5nxvefc
      * 
@@ -113,18 +113,17 @@ var innoHelper = {
      * @returns {Mixed|undefined}
      */
     getCache: function (name, params) {
-        if (!this.cachedTime || params.noCache) {
-            return;
-        }
-        if (this.cache.hasOwnProperty(name)) {
-            if (this.cache[name].expired <= Date.now()) {
-                delete this.cache[name];
-                return;
-            } else {
-                return this.cache[name].value;
+        var value;
+        if (this.cachedTime && !params.noCache) {
+            if (this.cache.hasOwnProperty(name)) {
+                if (this.cache[name].expired <= Date.now()) {
+                    delete this.cache[name];
+                } else {
+                    value = this.cache[name].value;
+                }
             }
         }
-        return;
+        return value;
     },
 
     /**
@@ -136,13 +135,12 @@ var innoHelper = {
      * @returns {undefined}
      */
     setCache: function (name, params, value) {
-        if (!this.cachedTime || params.noCache) {
-            return;
+        if (this.cachedTime && !params.noCache) {
+            this.cache[name] = {
+                expired: Date.now() + (this.cachedTime * 1000),
+                value: value || true
+            };
         }
-        this.cache[name] = {
-            expired: Date.now() + (this.cachedTime * 1000),
-            value: value || true
-        };
     },
 
     /**

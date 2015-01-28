@@ -1,13 +1,12 @@
 (function () {
-    var win = window;
-    var $ = win.$;
+    var $ = window.$;
 
     // Step 1. Define default path to file with schema
     var settingsSchemaSrc = "js/data/settings.schema.json"; // default path to json schema of sesstings' fields
 
     // Step 2. If custom path was defined - is it
-    if (settingsSchemaSrc in win) {
-        settingsSchemaSrc = win.settingsSchemaSrc;    // use custom path if exists
+    if (settingsSchemaSrc in window) {
+        settingsSchemaSrc = window.settingsSchemaSrc;    // use custom path if exists
     }
 
     // Step 3. Get data from json file. Call onPropertiesSchemaReady() when schema received

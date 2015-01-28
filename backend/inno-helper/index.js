@@ -49,21 +49,21 @@ var innoHelper = {
     /**
      * Object with environment vars
      * @private
-     * @type Object
+     * @type {Object}
      */
     vars: {},
 
     /**
      * Cache storage
      * @private
-     * @type Object
+     * @type {Object}
      */
     cache: {},
 
     /**
      * Cache TTL
      * @private
-     * @type Number
+     * @type {Number}
      */
     cachedTime: 10,
 
@@ -73,12 +73,12 @@ var innoHelper = {
      *     @example
      *     http://api.innomdc.com/v1/companies/4/buckets/testbucket/profiles/vze0bxh4qpso67t2dxfc7u81a5nxvefc
      *
-     * @param {Object} obj
+     * @param {Object} params
      * @returns {String}
      *
      */
-    webProfileAppUrl: function (obj) {
-        return util.format('%s/v1/companies/%s/buckets/%s/profiles/%s', this.vars.apiUrl, obj.groupId, obj.bucketName, obj.profileId);
+    webProfileAppUrl: function (params) {
+        return util.format('%s/v1/companies/%s/buckets/%s/profiles/%s', this.vars.apiUrl, params.groupId, params.bucketName, params.profileId);
     },
 
     /**
@@ -87,11 +87,11 @@ var innoHelper = {
      *     @example
      *     http://api.innomdc.com/v1/companies/4/buckets/testbucket/profiles/vze0bxh4qpso67t2dxfc7u81a5nxvefc?app_key=8HJ3hnaxErdJJ62H
      *
-     * @param {Object} obj
+     * @param {Object} params
      * @returns {String}
      */
-    profileAppUrl: function (obj) {
-        return util.format('%s?app_key=%s', this.webProfileAppUrl(obj), obj.appKey);
+    profileAppUrl: function (params) {
+        return util.format('%s?app_key=%s', this.webProfileAppUrl(params), params.appKey);
     },
 
     /**
@@ -100,11 +100,11 @@ var innoHelper = {
      *     @example
      *     http://api.innomdc.com/v1/companies/4/buckets/testbucket/apps/testapp/custom?app_key=8HJ3hnaxErdJJ62H
      *
-     * @param {Object} obj
+     * @param {Object} params
      * @returns {String}
      */
-    settingsAppUrl: function (obj) {
-        return util.format('%s/v1/companies/%s/buckets/%s/apps/%s/custom?app_key=%s', this.vars.apiUrl, obj.groupId, obj.bucketName, obj.appName, obj.appKey);
+    settingsAppUrl: function (params) {
+        return util.format('%s/v1/companies/%s/buckets/%s/apps/%s/custom?app_key=%s', this.vars.apiUrl, params.groupId, params.bucketName, params.appName, params.appKey);
     },
 
     /**
@@ -299,7 +299,7 @@ var innoHelper = {
 
     /**
      *
-     * @param rawData
+     * @param {Mixed} rawData
      * @return {Object}
      */
     parseStreamData: function (rawData) {
@@ -367,7 +367,7 @@ var innoHelper = {
      *
      * @param {Object} [params]
      * @param {Function} callback
-     * @returns {Mixed}
+     * @returns {undefined}
      */
     getSettings: function (params, callback) {
         var self = this,
@@ -385,43 +385,44 @@ var innoHelper = {
 
         if (allowCache) {
             cachedValue = this.getCache('settings' + vars.appName);
-            if (typeof cachedValue !== 'undefined') {
-                return callback(null, cachedValue);
-            }
         }
 
-        url = this.settingsAppUrl({
-            groupId:    vars.groupId,
-            bucketName: vars.bucketName,
-            appName:    vars.appName,
-            appKey:     vars.appKey
-        });
+        if (typeof cachedValue !== 'undefined') {
+            callback(null, cachedValue);
+        } else {
+            url = this.settingsAppUrl({
+                groupId:    vars.groupId,
+                bucketName: vars.bucketName,
+                appName:    vars.appName,
+                appKey:     vars.appKey
+            });
 
-        request.get(url, function (error, response) {
-            var body,
-                settings;
+            request.get(url, function (error, response) {
+                var body,
+                    settings;
 
-            if (!error) {
-                try {
-                    body = JSON.parse(response.body);
-                } catch (e) {
-                    throw new Error('Parse JSON settings (' + url + ')');
+                if (!error) {
+                    try {
+                        body = JSON.parse(response.body);
+                    } catch (e) {
+                        error = new Error('Parse JSON settings (' + url + ')');
+                    }
                 }
-            }
 
-            if (!error && !body.hasOwnProperty('custom')) {
-                error = new Error('Custom not found');
-            }
-
-            if (!error) {
-                settings = body.custom;
-                if (allowCache) {
-                    self.setCache('settings' + vars.appName, settings);
+                if (!error && (!body || !body.hasOwnProperty('custom'))) {
+                    error = new Error('Custom not found');
                 }
-            }
 
-            return callback(error, settings);
-        });
+                if (!error) {
+                    settings = body.custom;
+                    if (allowCache) {
+                        self.setCache('settings' + vars.appName, settings);
+                    }
+                }
+
+                callback(error, settings);
+            });
+        }
     },
 
     /**
@@ -465,7 +466,7 @@ var innoHelper = {
             if (!error) {
                 self.expireCache('attributes' + vars.profileId);
             }
-            return callback(error);
+            callback(error);
         });
     },
 
@@ -506,53 +507,54 @@ var innoHelper = {
 
         if (allowCache) {
             cachedValue = this.getCache('attributes' + vars.profileId);
-            if (typeof cachedValue !== 'undefined') {
-                return callback(null, cachedValue);
-            }
         }
 
-        url = this.profileAppUrl({
-            groupId:    vars.groupId,
-            bucketName: vars.bucketName,
-            profileId:  vars.profileId,
-            appKey:     vars.appKey
-        });
+        if (typeof cachedValue !== 'undefined') {
+           callback(null, cachedValue);
+        } else {
+            url = this.profileAppUrl({
+                groupId:    vars.groupId,
+                bucketName: vars.bucketName,
+                profileId:  vars.profileId,
+                appKey:     vars.appKey
+            });
 
-        request.get(url, function (error, response) {
-            var body,
-                profile,
-                attributes;
+            request.get(url, function (error, response) {
+                var body,
+                    profile,
+                    attributes;
 
-            if (!error) {
-                try {
-                    body = JSON.parse(response.body);
-                } catch (e) {
-                    error = new Error('Parse JSON profile (' + url + ')');
+                if (!error) {
+                    try {
+                        body = JSON.parse(response.body);
+                    } catch (e) {
+                        error = new Error('Parse JSON profile (' + url + ')');
+                    }
                 }
-            }
 
-            if (!error) {
-                profile = body.profile;
-                if (!profile) {
-                    error = new Error('Profile not found');
+                if (!error) {
+                    profile = body.profile;
+                    if (!profile) {
+                        error = new Error('Profile not found');
+                    }
                 }
-            }
 
-            if (!error) {
-                attributes = [];
-                if (profile.attributes &&
-                    profile.attributes.length) {
-                    attributes = profile.attributes;
+                if (!error) {
+                    attributes = [];
+                    if (profile.attributes &&
+                        profile.attributes.length) {
+                        attributes = profile.attributes;
+                    }
+                    if (allowCache) {
+                        self.setCache('attributes' + vars.profileId, attributes);
+                    }
                 }
-                if (allowCache) {
-                    self.setCache('attributes' + vars.profileId, attributes);
-                }
-            }
 
-            return callback(error, attributes);
-        });
+                callback(error, attributes);
+            });
+        }
     }
 
 };
 
-exports = module.exports = innoHelper;
+module.exports = innoHelper;

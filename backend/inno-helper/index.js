@@ -350,7 +350,7 @@ var innoHelper = {
             data:       session.events[0].data
         };
 
-        return data
+        return data;
     },
 
     /**
@@ -423,6 +423,44 @@ var innoHelper = {
                 callback(error, settings);
             });
         }
+    },
+
+    /**
+     * Set settings application
+     * @param {Object} settings
+     * @param {Object} [params]
+     * @param {Function} callback
+     * @returns {undefined}
+     */
+    setSettings: function (settings, params, callback) {
+        var self = this,
+            url,
+            vars;
+
+        if (arguments.length < 3) {
+            callback = params;
+            params = {};
+        }
+
+        vars = this.mergeVars(this.getVars(), params || {});
+
+        url = this.settingsAppUrl({
+            groupId:    vars.groupId,
+            bucketName: vars.bucketName,
+            appName:    vars.appName,
+            appKey:     vars.appKey
+        });
+
+        request.put({
+            url: url,
+            body: settings,
+            json: true
+        }, function (error) {
+            if (!error) {
+                self.expireCache('settings' + vars.appName);
+            }
+            callback(error);
+        });
     },
 
     /**

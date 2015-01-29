@@ -55,18 +55,13 @@ app.post('/', function (req, res) {
             created_at: Date.now()
         });
         
-        return inno.getSettings({
-            vars: inno.getVars()
-        }, function (error, settings) {
+        return inno.getSettings(function (error, settings) {
             if (error) {
                 return res.json({
                     error: error.message
                 });
             }
-            return inno.setAttributes({
-                vars: inno.getVars(),
-                data: settings
-            }, function (error) {
+            return inno.setAttributes(settings, function (error) {
                 if (error) {
                     return res.json({
                         error: error.message

@@ -1,6 +1,6 @@
 var express = require('express'),
     bodyParser = require('body-parser'),
-    inno = require('./inno-helper');
+    inno = require('node-inno-helper');
 
 var app = express(),
     port = parseInt(process.env.PORT, 10),

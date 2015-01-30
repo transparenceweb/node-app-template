@@ -31,7 +31,7 @@ app.get('/', function (req, res) {
 
 app.post('/', function (req, res) {
     
-    inno.getDatas(req, function (error, data) {
+    inno.getStreamData(req.body, function (error, data) {
         if (error) {
             return res.json({
                 error: error.message

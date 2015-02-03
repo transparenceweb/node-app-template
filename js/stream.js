@@ -1,9 +1,12 @@
 /* global moment: false */
 
 (function () {
+    var $ = window.$;
+
     var inno = new IframeHelper(),
+        loader = new Loader(),
         timerValues,
-        loader = new Loader();
+        timeout = 5;
     loader.show();
     inno.onReady(function () {
         var url = inno.getCurrentApp().url,
@@ -29,11 +32,18 @@
                         }
                         $('#stream').find('tbody').html(values.join(''));
                     }
+                    timeout = 5;
+                },
+                error: function () {
+                    inno.addScreenMessage('Error: request to "' + url + 'last-ten-values" failed. Server unavailable.', 'error');
+                    timeout *= 2;
+                },
+                complete: function () {
                     loader.hide();
                     if (timerValues) {
                         clearInterval(timerValues);
                     }
-                    timerValues = setTimeout(getValues, 5000);
+                    timerValues = setTimeout(getValues, timeout * 1000);
                 },
                 dataType: 'json'
             });

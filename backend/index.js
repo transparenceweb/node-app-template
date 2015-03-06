@@ -20,13 +20,13 @@ var vars = {
     appKey: process.env.INNO_APP_KEY,
     appName: process.env.INNO_APP_ID,
     groupId: process.env.INNO_COMPANY_ID,
-    apiUrl: process.env.INNO_API_HOST
+    apiUrl: process.env.INNO_API_HOST,
+    collectApp: process.env.INNO_APP_ID
 };
 inno.setVars(vars);
-inno.setVar('collectApp', process.env.INNO_APP_ID);
 
 app.get('/', function (req, res) {
-    return res.send('');
+    return res.send('Profile stream expected only as POST requests');
 });
 
 app.post('/', function (req, res) {

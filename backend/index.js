@@ -10,7 +10,7 @@ var app = express(),
 app.use(bodyParser.json());
 
 /**
- * This option allow send request to server located on another domain.
+ * If your app's frontend part is going to communicate directly with backend, you need to allow this
  * https://en.wikipedia.org/wiki/Cross-origin_resource_sharing
  */
 app.use(function (req, res, next) {
@@ -18,7 +18,9 @@ app.use(function (req, res, next) {
     next();
 });
 
-// Set params
+/* Init params from environment variables. Innometrics platform sets environment variables during install to Paas. 
+ * In case of manual install of backend part, you need to setup these manually.
+ */
 var vars = {
     bucketName: process.env.INNO_BUCKET_ID,
     appKey: process.env.INNO_APP_KEY,
@@ -29,12 +31,11 @@ var vars = {
 };
 inno.setVars(vars);
 
-// Handler routes
 app.get('/', function (req, res) {
     return res.send('Profile stream expected only as POST requests');
 });
 
-// POST request "/" always recieve stream events
+// POST request to "/" is always expected to recieve stream with events
 app.post('/', function (req, res) {
     // Parse stream
     inno.getStreamData(req.body, function (error, data) {
@@ -50,7 +51,7 @@ app.post('/', function (req, res) {
             });
         }
 
-        // Caching received events
+        // Caching received events (to be shown for debug purpose on frontend)
         cache.push({
             data: JSON.stringify({
                 created_at: data.event.createdAt,
@@ -62,7 +63,7 @@ app.post('/', function (req, res) {
             created_at: Date.now()
         });
 
-        // Reading settings
+        // Reading app settings from Profile Cloud
         return inno.getSettings(function (error, settings) {
             if (error) {
                 return res.json({
@@ -70,7 +71,7 @@ app.post('/', function (req, res) {
                 });
             }
 
-            // Writing data to attributes of profile
+            // Update person's profile with new attributes
             return inno.setAttributes(settings, function (error) {
                 if (error) {
                     return res.json({
@@ -87,7 +88,7 @@ app.post('/', function (req, res) {
     });
 });
 
-// Show last ten cached events from stream
+// Show last ten cached events from Profile stream
 app.get('/last-ten-values', function (req, res) {
     if (cache.length > 10) {
         cache = cache.slice(-10);

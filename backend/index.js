@@ -37,14 +37,14 @@ app.get('/', function (req, res) {
 
 // POST request to "/" is always expected to recieve stream with events
 app.post('/', function (req, res) {
-    // Parse stream
+    // Reading and parsing income events stream
     inno.getStreamData(req.body, function (error, data) {
         if (error) {
             return res.json({
                 error: error.message
             });
         }
-        // Check the validity of the data
+        
         if (!(data.event && data.event.createdAt && data.event.definitionId && data.data && data.profile && data.profile.id)) {
             return res.json({
                 error: 'Stream data is not correct'
@@ -88,7 +88,7 @@ app.post('/', function (req, res) {
     });
 });
 
-// Show last ten cached events from Profile stream
+// Return to GUI last 10 events saved in cache
 app.get('/last-ten-values', function (req, res) {
     if (cache.length > 10) {
         cache = cache.slice(-10);

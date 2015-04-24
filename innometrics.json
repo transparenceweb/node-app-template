@@ -1,14 +1,10 @@
 {
-    "version_name": "node-getting-started",
+    "version_name": "<enter app name here>",
     "version_description": "",
     "pages": [{
         "name": "App Settings",
         "type": "bundled",
         "content": "frontend/settings.html"
-    }, {
-        "name": "Profile Stream",
-        "type": "bundled",
-        "content": "frontend/stream.html"
     }],
     "permissions": ["stream", "profile.update", "profile.read", "app.read.own"],
     "runtime": {

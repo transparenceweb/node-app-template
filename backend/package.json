@@ -1,17 +1,15 @@
 {
-  "name": "node-getting-started",
+  "name": "<enter app name here>",
   "version": "0.0.1",
   "description": "",
   "main": "index.js",
   "private": true,
   "scripts": {
-    "start": "node index.js",
-    "test": "PORT=3000 node index.js"
+    "start": "node index.js"
   },
   "dependencies": {
     "body-parser": "^1.9.3",
     "express": "^4.0.0",
-    "request": "^2.45.0",
     "innometrics-helper": "*"
   },
   "engines": {

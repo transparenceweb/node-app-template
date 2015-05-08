@@ -17,7 +17,8 @@ app.use(function (req, res, next) {
     next();
 });
 
-/* Init params from environment variables. Innometrics platform sets environment variables during install to Paas. 
+/**
+ * Init params from environment variables. Innometrics platform sets environment variables during install to Paas.
  * In case of manual install of backend part, you need to setup these manually.
  */
 var vars = {
@@ -32,7 +33,6 @@ inno.setVars(vars);
 
 // POST request to "/" is always expected to recieve stream with events
 app.post('/', function (req, res) {
-        
     return res.json({
         message: "Welcom to Innometrics profile cloud!"
     });

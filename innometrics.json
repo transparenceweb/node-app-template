@@ -6,6 +6,26 @@
         "type": "bundled",
         "content": "frontend/settings.html"
     }],
+    "widgets": {
+        "first": {
+            "title": "First widget",
+            "footer": {
+                "options": {
+                    "type": "page",
+                    "value": "settings/settings.html",
+                    "defaultSetting": {
+                        "stringSetting": "test",
+                        "numberSetting": 15,
+                        "arraySetting": ["one", "three"]
+                    }
+                },
+                "seeMore": {
+                    "type": "tab",
+                    "value": "App Settings"
+                },
+            }
+        }
+    },
     "permissions": ["stream", "profile.update", "profile.read", "app.read.own"],
     "runtime": {
         "language": "node",

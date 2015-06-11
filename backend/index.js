@@ -1,6 +1,6 @@
 var express = require('express'),          // Using Express library for simple web server functionality
     bodyParser = require('body-parser'),
-    inno = require('innometrics-helper');  // Innometrics helper to work with profile cloud
+    InnoHelper = require('innometrics-helper');  // Innometrics helper to work with profile cloud
 
 var app = express(),
     port = parseInt(process.env.PORT, 10);
@@ -25,12 +25,12 @@ app.use(function (req, res, next) {
 var vars = {
     bucketName: process.env.INNO_BUCKET_ID,
     appKey: process.env.INNO_APP_KEY,
-    appName: process.env.INNO_APP_ID,
-    groupId: process.env.INNO_COMPANY_ID,
     apiUrl: process.env.INNO_API_HOST,
-    collectApp: process.env.INNO_APP_ID
+    appName: process.env.INNO_APP_ID,
+    groupId: process.env.INNO_COMPANY_ID
 };
-inno.setVars(vars);
+
+var inno = new InnoHelper(vars);
 
 // POST request to "/" is always expected to recieve stream with events
 app.post('/', function (req, res) {

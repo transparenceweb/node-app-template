@@ -13,7 +13,7 @@
                 "options": {
                     "type": "page",
                     "value": "settings/settings.html",
-                    "defaultSetting": {
+                    "defaultSettings": {
                         "stringSetting": "test",
                         "numberSetting": 15,
                         "arraySetting": ["one", "three"]
@@ -22,7 +22,7 @@
                 "seeMore": {
                     "type": "tab",
                     "value": "App Settings"
-                },
+                }
             }
         }
     },

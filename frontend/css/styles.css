@@ -9,3 +9,10 @@ body {
 .quote {
     padding-top: 55px;
 }
+
+.row {
+    margin: 0;
+}
+.row div {
+    padding: 0;
+}

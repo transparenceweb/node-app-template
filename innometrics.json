@@ -9,20 +9,34 @@
     "widgets": {
         "first": {
             "title": "First widget",
-            "footer": {
-                "options": {
-                    "type": "page",
-                    "value": "settings/settings.html",
-                    "defaultSettings": {
-                        "stringSetting": "test",
-                        "numberSetting": 15,
-                        "arraySetting": ["one", "three"]
-                    }
-                },
-                "seeMore": {
-                    "type": "tab",
-                    "value": "App Settings"
+            "options": {
+                "type": "page",
+                "value": "settings/settings.html",
+                "defaultSettings": {
+                    "stringSetting": "test",
+                    "numberSetting": 15,
+                    "arraySetting": ["one", "three"]
                 }
+            },
+            "seeMore": {
+                "type": "tab",
+                "value": "App Settings"
+            }
+        },
+        "second": {
+            "title": "Non first widget",
+            "options": {
+                "type": "page",
+                "value": "settings/settings.html",
+                "defaultSettings": {
+                    "stringSetting": "test",
+                    "numberSetting": 15,
+                    "arraySetting": ["one", "three"]
+                }
+            },
+            "seeMore": {
+                "type": "tab",
+                "value": "App Settings"
             }
         }
     },

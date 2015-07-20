@@ -1,6 +1,6 @@
 var express = require('express'),          // Using Express library for simple web server functionality
     bodyParser = require('body-parser'),
-    inno = require('../../node-inno-helper');  // Innometrics helper to work with profile cloud
+    inno = require('innometrics-helper');  // Innometrics helper to work with profile cloud
 
 var app = express(),
     port = parseInt(process.env.PORT, 10);

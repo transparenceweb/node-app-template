@@ -1,0 +1,22 @@
+{
+  "name": "innometrics",
+  "version": "1.0.0",
+  "description": "Intergration app for use with Innometrics and their Heroku platform instnace.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://transparenceweb@github.com/transparenceweb/node-app-template.git"
+  },
+  "keywords": [
+    "nodejs"
+  ],
+  "author": "phil wright",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/transparenceweb/node-app-template/issues"
+  },
+  "homepage": "https://github.com/transparenceweb/node-app-template#readme"
+}
